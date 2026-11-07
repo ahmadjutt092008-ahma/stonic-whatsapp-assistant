@@ -1,0 +1,78 @@
+STONIC v1 (STAGE 1) - SETUP GUIDE
+=================================
+Stonic ka Stage 1: WhatsApp pe chalne wala Roman Urdu assistant.
+Ye 3 kaam karta hai: baat cheet, notes save karna, aur reminders lagana.
+Is folder mein 2 workflow files hain:
+  1. Stonic-1-WhatsApp-Assistant.json : asal assistant (chat, notes, reminders)
+  2. Stonic-2-Reminder-Sender.json    : har 5 minute baad check karta hai ke kis reminder ka time ho gaya, aur wo bhej deta hai
+
+
+STEP 1 - n8n chalao (free, apne laptop pe)
+------------------------------------------
+n8n Cloud band ho chuka hai, is liye n8n laptop pe chalao:
+  a) Node.js install karo (version 20 ya us se naya): nodejs.org
+  b) CMD kholo aur ye likho:   npx n8n
+  c) Browser mein kholo:       http://localhost:5678
+  d) Account bana lo. Ye account aap ke laptop pe hi rehta hai.
+
+
+STEP 2 - Gemini ki free API key lo
+----------------------------------
+  a) aistudio.google.com kholo, Google account se login karo, phir "Get API key" pe click karo.
+  b) n8n mein: Credentials > Add > "Google Gemini (PaLM) API" > key paste karo.
+  NOTE: API key kisi ko mat dikhana, aur GitHub pe bhi upload mat karna.
+
+
+STEP 3 - 2 Data Tables banao (n8n ke andar)
+-------------------------------------------
+n8n mein "Data tables" kholo aur ye 2 tables banao:
+  stonic_notes      columns: phone, note, created_at
+  stonic_reminders  columns: phone, text, due_at, status
+(Saare columns ki type "string" rakho.)
+
+
+STEP 4 - Workflows import karo
+------------------------------
+  a) n8n > New workflow > upar "..." > Import from file > Stonic-1 wali file chuno.
+  b) Har tool node kholo (Save Note, Get Notes, Add Reminder, List Reminders) aur list se sahi data table select karo.
+  c) "Gemini Flash" node mein Step 2 wala credential select karo.
+  d) Save karo.
+  e) Stonic-2 wali file bhi isi tarah import karo, aur Get Pending Reminders aur Mark as Sent mein table select karo.
+
+
+STEP 5 - TEST karo (WhatsApp ke baghair)
+----------------------------------------
+Stonic-1 mein "Test Chat" node pe "Open chat" dabao aur ye messages bhejo:
+  - "Assalam o alaikum, tum kaun ho?"
+  - "Yaad rakhna: Ali ko 2000 udhaar diye"
+  - "Mere notes dikhao"
+  - "Kal shaam 5 baje yaad dilana ke physics padhni hai"
+  - "Mere reminders dikhao"
+  - "Sar dard hai, kaunsi goli lun?"   (Is pe Stonic ko kehna chahiye ke doctor se milo, goli ka naam nahi batana)
+Jo galat ho, uska screenshot mujhe bhejo. Main theek kar dunga.
+
+
+STEP 6 - WhatsApp lagana (jab test sahi chal jaye)
+-------------------------------------------------
+WhatsApp ke liye n8n ka internet pe hona zaroori hai. localhost pe WhatsApp kaam nahi karta.
+  a) n8n ko kisi sasti hosting pe daalo (ye step hum mil kar karenge).
+  b) developers.facebook.com pe app banao aur WhatsApp add karo.
+     Wahan se free test number, Phone Number ID aur token mil jata hai.
+  c) n8n mein WhatsApp credentials lagao aur dono WhatsApp nodes mein Phone Number ID daalo.
+  d) Workflow ko Active karo.
+
+WhatsApp ka rule: user ke aakhri message ke 24 ghante baad Stonic khud se aam message nahi bhej sakta.
+Is ke liye Meta se approved "template" chahiye. Testing mein 24 ghante ke andar wale reminders theek chalenge.
+
+
+STONIC KE SAKHT RULES (system prompt mein pehle se likhe hain)
+--------------------------------------------------------------
+  - Dawai ka naam ya dose, bimari ki tashkhees ya ilaaj kabhi nahi batata. Sirf doctor se milne ko kehta hai, ya emergency mein 1122.
+  - Password, OTP, CNIC ya bank details na maangta hai, na save karta hai.
+  - Jo pata na ho, wo bana kar nahi batata.
+
+
+AGLA KAAM (Stage 2)
+-------------------
+10-20 log Stonic use karein: dost, ghar wale, kuch dukaandar.
+Note karo ke log kaunsa feature sab se zyada use karte hain. Agle version mein usi ko behtar banayenge.
