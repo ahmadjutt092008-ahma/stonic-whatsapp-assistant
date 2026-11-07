@@ -1,0 +1,604 @@
+{
+  "name": "Stonic v1 · WhatsApp Assistant",
+  "nodes": [
+    {
+      "id": "9e98cd09-3c67-4a51-b9bf-ea232a94ac59",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -260
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 220,
+        "content": "## Stonic v1 (Stage 1)\nWhatsApp pe Roman Urdu assistant: chat, notes, reminders.\n\n1. Pehle **Test Chat** se test karo (WhatsApp ki zaroorat nahi).\n2. Data tables banao: `stonic_notes` (phone, note, created_at) aur `stonic_reminders` (phone, text, due_at, status). Har tool mein table select karo.\n3. Gemini credential lagao (free API key: aistudio.google.com).\n4. WhatsApp baad mein: Trigger + Reply node mein WhatsApp credentials aur Phone Number ID."
+      }
+    },
+    {
+      "id": "dbdbb7e6-19fd-469f-8979-0e4109577ffb",
+      "name": "WhatsApp Message In",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "updates": [
+          "messages"
+        ]
+      },
+      "webhookId": "5ad12109-f7df-47b6-928a-9e97c780b699"
+    },
+    {
+      "id": "ccac0bdd-1931-46e8-a1ca-029db415572e",
+      "name": "Only Text Messages",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "62c41407-2c3f-4eae-99b5-a443e6fb4c3a",
+              "leftValue": "={{ $json.messages?.[0]?.type }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fb8add1b-f164-44e1-9d93-09b6bfcca0e6",
+      "name": "WhatsApp Prepare",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5f41f4fe-fcc9-40a4-8743-864ce689551f",
+              "name": "phone",
+              "value": "={{ $json.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "c60e169e-3229-4ceb-8e12-65f2d76285f7",
+              "name": "name",
+              "value": "={{ $json.contacts?.[0]?.profile?.name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "1bbcb292-37de-402b-a989-16ba22d19137",
+              "name": "text",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "11c370e8-3978-4492-a3b4-2494d6a3e1d1",
+      "name": "Test Chat (no WhatsApp needed)",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        220
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "webhookId": "768b3856-716e-4878-81f1-fba10a509711"
+    },
+    {
+      "id": "37575d4d-9923-4f05-a8c7-06aac5112534",
+      "name": "Test Chat Prepare",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        220
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "760a61cc-f4d3-472a-a41c-d0c1762cf47c",
+              "name": "phone",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "d4775560-ecdd-4054-b53b-4df88ae34b7e",
+              "name": "name",
+              "value": "Test",
+              "type": "string"
+            },
+            {
+              "id": "3c1a8ca3-5584-461f-a838-0cb12a40e231",
+              "name": "text",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fbd3b384-c716-4b92-986b-c34a4b85b07f",
+      "name": "Stonic Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        700,
+        100
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=Tum \"Stonic\" ho, Ahmad ka banaya hua personal AI assistant, jo WhatsApp pe chalta hai.\n\nAAJ: {{ $now.setZone(\"Asia/Karachi\").toFormat(\"cccc d LLLL yyyy, HH:mm\") }} (Pakistan time). \"kal\", \"parson\", \"shaam 5 baje\" jaise alfaaz ko is time ke hisaab se exact date/time mein badlo.\n\nZUBAAN: user jis zubaan mein likhe usi mein jawab do (Roman Urdu, Urdu ya English). Chhote, dostana, WhatsApp jaise messages. Lambe paragraph nahi.\n\nTUM KYA KAR SAKTE HO:\n1. NOTES: user kuch yaad rakhwana chahe to \"Save Note\" tool se save karo. Puche to \"Get Notes\" se nikal kar batao.\n2. REMINDERS: user reminder kahe to \"Add Reminder\" tool use karo. due_at ISO format mein do, Pakistan time zone ke saath (misal: 2026-11-08T17:00:00+05:00). Save karne ke baad date aur time confirm karo. \"List Reminders\" se pending reminders dikhao.\n3. Aam sawal, padhai, business ke chhote kaam, message likhna, hisaab: khud jawab do.\n\nSAKHT RULES:\n- Tum doctor nahi ho. Dawai ki dose, bimari ki tashkhees ya ilaaj kabhi mat batao. Sehat ke sawal pe kaho ke doctor se milein; emergency ho to fauran 1122 ya qareebi hospital. Sirf appointment ya dawai ka REMINDER laga sakte ho.\n- Paise, bank, password, OTP, CNIC kabhi mat maango aur save mat karo. User bheje to kaho ke ye mat bhejein.\n- Jo cheez pata nahi, wo bana kar mat batao. Seedha kaho \"mujhe pakka nahi pata\".\n- Tool ka naam ya technical baatein user ko mat dikhao.",
+          "maxIterations": 6
+        }
+      }
+    },
+    {
+      "id": "44584aad-ee9b-42e3-b980-d654f5543ce9",
+      "name": "Gemini Flash (free tier)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        560,
+        360
+      ],
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.4
+        }
+      }
+    },
+    {
+      "id": "2fb230e6-b9c7-4df5-94bd-f2b4ebd9cde9",
+      "name": "Memory per User",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        360
+      ],
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.phone }}",
+        "contextWindowLength": 15
+      }
+    },
+    {
+      "id": "c5d70579-f091-49c6-84e9-f8c004f51f6c",
+      "name": "Save Note",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        360
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Save one note the user wants to remember. Input: note text.",
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PASTE_TABLE_ID_stonic_notes",
+          "cachedResultName": "stonic_notes"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $json.phone }}",
+            "note": "={{ $fromAI('note', 'The note to save, short and clear', 'string') }}",
+            "created_at": "={{ $now.setZone('Asia/Karachi').toISO() }}"
+          },
+          "schema": [
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "16219611-a06c-427d-9ed9-64c1acf24ac9",
+      "name": "Get Notes",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        360
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get all saved notes of this user.",
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PASTE_TABLE_ID_stonic_notes",
+          "cachedResultName": "stonic_notes"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "condition": "eq",
+              "keyValue": "={{ $json.phone }}"
+            }
+          ]
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "e84d25aa-a5f5-4632-9eeb-4e3697045132",
+      "name": "Add Reminder",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        360
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create a reminder. Inputs: text (what to remind) and due_at (ISO date-time with +05:00).",
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PASTE_TABLE_ID_stonic_reminders",
+          "cachedResultName": "stonic_reminders"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $json.phone }}",
+            "text": "={{ $fromAI('text', 'What to remind the user about', 'string') }}",
+            "due_at": "={{ $fromAI('due_at', 'ISO 8601 date-time with +05:00, e.g. 2026-11-08T17:00:00+05:00', 'string') }}",
+            "status": "pending"
+          },
+          "schema": [
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "due_at",
+              "displayName": "due_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a177bb1b-dedb-455c-a43e-228ef5a9005e",
+      "name": "List Reminders",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1360,
+        360
+      ],
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "List this user's pending reminders.",
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PASTE_TABLE_ID_stonic_reminders",
+          "cachedResultName": "stonic_reminders"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "condition": "eq",
+              "keyValue": "={{ $json.phone }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "8112121e-5426-4ed1-b702-8092bd9fd5eb",
+      "name": "Came from WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1060,
+        100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "97f60b00-a59d-4fdc-8373-cebd603fcfba",
+              "leftValue": "={{ $('WhatsApp Prepare').isExecuted }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "da3cbbfc-08f9-49c3-bb8d-a6ce63064559",
+      "name": "Reply on WhatsApp",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        0
+      ],
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "PASTE_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('WhatsApp Prepare').item.json.phone }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Message In": {
+      "main": [
+        [
+          {
+            "node": "Only Text Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Text Messages": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Prepare": {
+      "main": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Chat (no WhatsApp needed)": {
+      "main": [
+        [
+          {
+            "node": "Test Chat Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Chat Prepare": {
+      "main": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stonic Agent": {
+      "main": [
+        [
+          {
+            "node": "Came from WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Came from WhatsApp?": {
+      "main": [
+        [
+          {
+            "node": "Reply on WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Gemini Flash (free tier)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory per User": {
+      "ai_memory": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Note": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Notes": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Reminder": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Reminders": {
+      "ai_tool": [
+        [
+          {
+            "node": "Stonic Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Karachi"
+  }
+}
